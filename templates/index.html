@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Bus Counter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease;
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { font-size: 1.1rem; opacity: 0.95; }
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        .card-header h2 { font-size: 1.8rem; font-weight: 600; }
+        .card-body { padding: 30px; }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 50px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e9ecef;
+            transform: translateY(-3px);
+        }
+        .upload-icon { font-size: 3rem; color: #667eea; margin-bottom: 15px; }
+        .upload-text { font-size: 1.2rem; color: #555; margin-bottom: 5px; font-weight: 600; }
+        .upload-hint { color: #888; font-size: 0.9rem; }
+        #imageInput { display: none; }
+        .file-info {
+            margin: 15px 0;
+            padding: 12px;
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+            color: #667eea;
+            display: none;
+            font-weight: 500;
+        }
+        .btn-group { display: flex; gap: 15px; margin-top: 25px; flex-wrap: wrap; }
+        .btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .result {
+            display: none;
+            margin-top: 30px;
+            animation: fadeIn 0.6s ease;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .result-card.secondary {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            color: #333;
+        }
+        .result-value { font-size: 2.5rem; font-weight: 700; margin-bottom: 5px; }
+        .result-label { font-size: 0.95rem; opacity: 0.9; }
+        .result-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .history-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .history-title {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .history-list { list-style: none; }
+        .history-item {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #667eea;
+        }
+        .history-time { color: #888; font-size: 0.85rem; }
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+        .alert.success { background: linear-gradient(135deg, #4CAF50, #45a049); }
+        .alert.error { background: linear-gradient(135deg, #f44336, #da190b); }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .card-body { padding: 20px; }
+            .btn-group { flex-direction: column; }
+            .btn { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-bus"></i> AI Bus Counter</h1>
+            <p>Система подсчета автобусов на остановке</p>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-upload"></i> Загрузка изображения</h2>
+            </div>
+            <div class="card-body">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <div class="upload-text">Перетащите изображение сюда</div>
+                    <div class="upload-hint">или нажмите для выбора файла</div>
+                </div>
+                <input type="file" id="imageInput" accept="image/*">
+                <div class="file-info" id="fileInfo"></div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="processBtn" onclick="processImage()">
+                        <i class="fas fa-play"></i>
+                        <span>Запустить обработку</span>
+                        <div class="spinner" id="spinner"></div>
+                    </button>
+                    <a href="/export_excel" class="btn btn-secondary">
+                        <i class="fas fa-file-excel"></i> Скачать отчет
+                    </a>
+                </div>
+                <div class="result" id="result">
+                    <div class="result-grid">
+                        <div class="result-card">
+                            <div class="result-value" id="busCount">0</div>
+                            <div class="result-label"><i class="fas fa-bus"></i> Автобусов найдено</div>
+                        </div>
+                        <div class="result-card secondary">
+                            <div class="result-value" id="procTime">0</div>
+                            <div class="result-label"><i class="fas fa-clock"></i> Секунд</div>
+                        </div>
+                    </div>
+                    <img class="result-image" id="resultImage" src="" alt="Result">
+                </div>
+                <div class="history-section" id="historySection" style="display: none;">
+                    <div class="history-title"><i class="fas fa-history"></i> История:</div>
+                    <ul class="history-list" id="historyList"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="alert" id="alert"></div>
+    <script>
+        let selectedFile = null, startTime = null, checkHistory = [];
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+            uploadArea.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }, false);
+        });
+        ['dragenter', 'dragover'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(e => uploadArea.addEventListener(e, () => uploadArea.classList.remove('dragover'), false));
+        uploadArea.addEventListener('drop', e => { if(e.dataTransfer.files.length) { imageInput.files = e.dataTransfer.files; handleFile(e.dataTransfer.files[0]); } }, false);
+        uploadArea.addEventListener('click', () => imageInput.click());
+        imageInput.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+
+        function handleFile(file) {
+            selectedFile = file;
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('fileInfo').innerHTML = `<i class="fas fa-file-image"></i> ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+            document.querySelector('.upload-text').textContent = 'Файл выбран';
+        }
+
+        async function processImage() {
+            if(!selectedFile) { showAlert('Выберите файл!', 'error'); return; }
+            const btn = document.getElementById('processBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = btn.querySelector('span');
+            const btnIcon = btn.querySelector('i');
+            
+            btn.disabled = true; spinner.style.display = 'block'; btnText.textContent = 'Обработка...'; btnIcon.style.display = 'none';
+            startTime = Date.now();
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            try {
+                const res = await fetch('/process', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                if(data.image_url) {
+                    const procTime = ((Date.now() - startTime)/1000).toFixed(2);
+                    document.getElementById('busCount').textContent = data.count;
+                    document.getElementById('procTime').textContent = procTime;
+                    document.getElementById('resultImage').src = data.image_url + '?' + Date.now();
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    addToHistory(data.count, procTime);
+                    showAlert(`Найдено автобусов: ${data.count}`, 'success');
+                } else showAlert('Ошибка: ' + data.error, 'error');
+            } catch(err) { showAlert('Ошибка: ' + err.message, 'error'); }
+            finally {
+                btn.disabled = false; spinner.style.display = 'none'; btnText.textContent = 'Запустить обработку'; btnIcon.style.display = 'inline-block';
+            }
+        }
+
+        function addToHistory(count, time) {
+            const now = new Date();
+            checkHistory.unshift({ count, time, timeStr: now.toLocaleTimeString() });
+            if(checkHistory.length > 3) checkHistory.pop();
+            document.getElementById('historySection').style.display = 'block';
+            document.getElementById('historyList').innerHTML = checkHistory.map(item => 
+                `<li class="history-item"><span>Автобусов: <b>${item.count}</b> (${item.time}с)</span><span class="history-time">${item.timeStr}</span></li>`
+            ).join('');
+        }
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('alert');
+            alert.className = 'alert ' + type;
+            alert.innerHTML = `<i class="fas fa-${type==='success'?'check':'exclamation'}-circle"></i> ${msg}`;
+            alert.style.display = 'block';
+            setTimeout(() => { alert.style.display = 'none'; }, 3000);
+        }
+    </script>
+</body>
+</html>
